@@ -57,7 +57,6 @@
             text-align: left;
             display: none;
         }
-        /* 🐛 Bug Tracker Console Styling */
         .bug-log-box {
             width: 100%;
             max-width: 450px;
@@ -91,7 +90,7 @@
     </div>
 </div>
 
-<!-- 🐛 लाइव बग ट्रैकर स्क्रीन -->
+<!-- लाइव बग ट्रैकर स्क्रीन -->
 <div class="bug-log-box">
     <div style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; color: #fff;">
         🐛 LIVE BUG TRACKER LOGS:
@@ -99,27 +98,19 @@
     <div id="bugLogs">पेज लोड हो रहा है...</div>
 </div>
 
-<!-- सुरक्षित फ़ायरबेस स्क्रिप्ट्स -->
-<script src="https://gstatic.com"></script>
-<script src="https://gstatic.com"></script>
+<!-- यहाँ नया स्क्रिप्ट लोड करने का तरीका बदला गया है जो फ़ेल नहीं होगा -->
+<script type="module">
+    import { initializeApp } from "https://gstatic.com";
+    import { getFirestore, doc, getDoc } from "https://gstatic.com";
 
-<script>
     // बग ट्रैकर फंक्शन
-    function logBug(message, type = 'info') {
+    window.logBug = function(message, type = 'info') {
         const logsDiv = document.getElementById("bugLogs");
         let className = 'bug-info';
         if (type === 'error') className = 'bug-error';
         if (type === 'success') className = 'bug-success';
-        
-        // नया लॉग ऊपर जोड़ेगा
         logsDiv.innerHTML = `<div class="${className}">[${new Date().toLocaleTimeString()}] ${message}</div>` + logsDiv.innerHTML;
     }
-
-    // ग्लोबल एरर कैचर (अगर कोई भी फाइल या स्क्रिप्ट लोड नहीं हुई तो यह पकड़ेगा)
-    window.onerror = function(msg, url, line) {
-        logBug(`क्रिटिकल एरर: ${msg} (लाइन नम्बर: ${line})`, 'error');
-        return false;
-    };
 
     // फ़ायरबेस कॉन्फ़िगरेशन
     const firebaseConfig = {
@@ -132,16 +123,18 @@
         measurementId: "G-E20PGF578T"
     };
 
+    let db;
     try {
-        logBug("फायरबेस कनेक्ट किया जा रहा है...", 'info');
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.firestore();
+        logBug("फायरबेस से नया कनेक्शन बनाया जा रहा है...", 'info');
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
         logBug("फायरबेस सफलतापूर्वक लोड हो गया है! अब आप सर्च कर सकते हैं।", 'success');
     } catch (e) {
         logBug(`फायरबेस सेटअप फेल हुआ: ${e.message}`, 'error');
     }
 
-    async function searchUser() {
+    // सर्च फंक्शन
+    window.searchUser = async function() {
         logBug("खोजें बटन दबाया गया। प्रोसेस शुरू...", 'info');
         
         const phone = document.getElementById("phoneInput").value.trim();
@@ -153,12 +146,17 @@
             return;
         }
 
+        if (!db) {
+            logBug("फायरबेस लोड नहीं हुआ है, इसलिए सर्च नहीं किया जा सकता।", 'error');
+            return;
+        }
+
         try {
             logBug(`डेटाबेस में नंबर ${phone} को खोजा जा रहा है...`, 'info');
-            const docRef = db.collection("users").doc(phone);
-            const docSnap = await docRef.get();
+            const docRef = doc(db, "users", phone);
+            const docSnap = await getDoc(docRef);
 
-            if (docSnap.exists) {
+            if (docSnap.exists()) {
                 const userData = docSnap.data();
                 document.getElementById("resName").innerText = userData.name || "उपलब्ध नहीं";
                 document.getElementById("resDetails").innerText = userData.details || "उपलब्ध नहीं";
@@ -169,10 +167,7 @@
                 logBug(`खोज पूरी हुई: नंबर (${phone}) का कोई डेटाबेस रिकॉर्ड नहीं मिला।`, 'error');
             }
         } catch (error) {
-            logBug(`फायरबेस से डेटा लाने में एरर आया: ${error.code} - ${error.message}`, 'error');
-            if(error.message.includes('permission-denied')) {
-                logBug("सलाह: आपके फायरबेस रूल्स (Rules) अभी भी ब्लॉक हैं! कृपया उन्हें दोबारा चेक करें।", 'error');
-            }
+            logBug(`डेटा लाने में एरर आया: ${error.message}`, 'error');
         }
     }
 </script>
