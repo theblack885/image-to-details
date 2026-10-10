@@ -144,7 +144,7 @@ footer{font:400 12px var(--f-mono);color:var(--muted);display:flex;justify-conte
     <div class="sec-h"><h2>How it works</h2></div>
     <div class="steps">
       <div class="glass step"><h3>Drop a photo</h3><p>The file is read by your browser and drawn to a canvas. Nothing is sent anywhere.</p></div>
-      <div class="glass step"><h3>Faces are outlined</h3><p>Your browser's built-in detector finds faces and marks each one with a box and a count.</p></div>
+      <div class="glass step"><h3>Faces are outlined</h3><p>A face detector running in your browser finds faces and marks each one with a box and a count.</p></div>
       <div class="glass step"><h3>Pick an engine</h3><p>Copy the image, open a search engine and paste. Results come from that engine, not from us.</p></div>
     </div>
   </section>
@@ -156,6 +156,7 @@ footer{font:400 12px var(--f-mono);color:var(--muted);display:flex;justify-conte
   <footer><span>Lens Atlas · 2027 edition</span><span>Face detection runs locally in your browser</span></footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
 <script>
 (function(){
   var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
@@ -192,9 +193,17 @@ footer{font:400 12px var(--f-mono);color:var(--muted);display:flex;justify-conte
 
   function setMsg(html,warn){msg.className='msg'+(warn?' warn':'');msg.innerHTML=html}
 
-  async function detect(img){
-    if(!('FaceDetector' in window)) return null;
-    try{var d=new FaceDetector({fastMode:false,maxDetectedFaces:30});return await d.detect(img)}catch(e){return null}
+  var modelsReady=null;
+  function loadModels(){
+    if(!modelsReady) modelsReady=faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+    return modelsReady;
+  }
+  async function detect(c){
+    try{
+      await loadModels();
+      var r=await faceapi.detectAllFaces(c,new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:0.4}));
+      return r.map(function(d){return {boundingBox:d.box}});
+    }catch(e){return null}
   }
 
   async function load(f){
@@ -209,7 +218,7 @@ footer{font:400 12px var(--f-mono);color:var(--muted);display:flex;justify-conte
       await new Promise(function(r){setTimeout(r,500)});
       view.classList.remove('busy');tag.textContent='YOUR IMAGE';
       if(faces===null){
-        setMsg('<b>Image ready.</b> This browser has no built-in face detector. Try Chrome or Edge to outline faces.',true);
+        setMsg('<b>Image ready.</b> Face detector could not load. Check your internet and reload the page.',true);
       }else if(faces.length){
         faces.forEach(function(f2,i){var b=f2.boundingBox;box(b.x,b.y,b.width,b.height,'face '+(i+1))});
         setMsg('<b>'+faces.length+' face'+(faces.length>1?'s':'')+' found.</b> Copy the image and open a search engine below.');
