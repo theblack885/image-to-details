@@ -64,7 +64,7 @@
 <div class="search-container">
     <h2>यूज़र डिटेल्स खोजें</h2>
     <input type="text" id="phoneInput" placeholder="फ़ोन नंबर दर्ज करें (e.g. 8482915363)">
-    <button onclick="searchUser()">खोजें (Search)</button>
+    <button onclick="searchUser()">क्लिक करें (Search)</button>
 
     <div id="errorMsg" class="error"></div>
 
@@ -75,12 +75,12 @@
     </div>
 </div>
 
-<!-- सुरक्षित और आसान फ़ायरबेस स्क्रिप्ट्स (जो सीधे कंप्यूटर पर भी चलेंगी) -->
+<!-- सुरक्षित फ़ायरबेस स्क्रिप्ट्स -->
 <script src="https://gstatic.com"></script>
 <script src="https://gstatic.com"></script>
 
 <script>
-    // आपकी फ़ायरबेस कॉन्फ़िगरेशन डिटेल्स
+    // फ़ायरबेस कॉन्फ़िगरेशन
     const firebaseConfig = {
         apiKey: "AIzaSyAzCILK4qWjGYvkZX0Y4SUtCqduJNA0Njk",
         authDomain: "://firebaseapp.com",
@@ -91,12 +91,13 @@
         measurementId: "G-E20PGF578T"
     };
 
-    // फ़ायरबेस को शुरू करें
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // सर्च फ़ंक्शन
     async function searchUser() {
+        // 🚨 टेस्ट के लिए अलर्ट - बटन दबते ही यह स्क्रीन पर आना चाहिए
+        alert("बटन पर क्लिक हो गया है! अब डेटा खोजा जा रहा है...");
+
         const phone = document.getElementById("phoneInput").value.trim();
         const errorMsg = document.getElementById("errorMsg");
         const resultBox = document.getElementById("resultBox");
@@ -110,25 +111,21 @@
         }
 
         try {
-            // 'users' कलेक्शन से डेटा खोजना
             const docRef = db.collection("users").doc(phone);
             const docSnap = await docRef.get();
 
             if (docSnap.exists) {
                 const userData = docSnap.data();
-                
-                // डेटा को स्क्रीन पर दिखाना
                 document.getElementById("resName").innerText = userData.name || "उपलब्ध नहीं";
                 document.getElementById("resDetails").innerText = userData.details || "उपलब्ध नहीं";
                 document.getElementById("resStatus").innerText = userData.status || userData.image_url || "उपलब्ध नहीं";
-                
                 resultBox.style.display = "block";
             } else {
                 errorMsg.innerText = "इस नंबर का कोई डेटा नहीं मिला!";
             }
         } catch (error) {
-            console.error("Error fetching document:", error);
-            errorMsg.innerText = "डेटा खोजने में कोई दिक्कत आई है।";
+            console.error("Error:", error);
+            errorMsg.innerText = "डेटा खोजने में दिक्कत आई।";
         }
     }
 </script>
