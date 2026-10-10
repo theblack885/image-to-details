@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to Details - Search System</title>
+    <title>Image to Details - Bug Tracker System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f6;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            height: 100vh;
+            justify-content: center;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .search-container {
             background: white;
@@ -20,8 +23,9 @@
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
-            width: 90%;
+            width: 100%;
             max-width: 400px;
+            margin-bottom: 20px;
         }
         input[type="text"] {
             width: 100%;
@@ -53,10 +57,24 @@
             text-align: left;
             display: none;
         }
-        .error {
-            color: red;
-            margin-top: 15px;
+        /* 🐛 Bug Tracker Console Styling */
+        .bug-log-box {
+            width: 100%;
+            max-width: 450px;
+            background-color: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-align: left;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
         }
+        .bug-error { color: #ff5555; font-weight: bold; }
+        .bug-success { color: #55ff55; }
+        .bug-info { color: #55ffff; }
     </style>
 </head>
 <body>
@@ -64,9 +82,7 @@
 <div class="search-container">
     <h2>यूज़र डिटेल्स खोजें</h2>
     <input type="text" id="phoneInput" placeholder="फ़ोन नंबर दर्ज करें (e.g. 8482915363)">
-    <button onclick="searchUser()">क्लिक करें (Search)</button>
-
-    <div id="errorMsg" class="error"></div>
+    <button onclick="searchUser()">खोजें (Search)</button>
 
     <div id="resultBox" class="result-box">
         <strong>नाम:</strong> <span id="resName"></span><br><br>
@@ -75,11 +91,36 @@
     </div>
 </div>
 
+<!-- 🐛 लाइव बग ट्रैकर स्क्रीन -->
+<div class="bug-log-box">
+    <div style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; color: #fff;">
+        🐛 LIVE BUG TRACKER LOGS:
+    </div>
+    <div id="bugLogs">पेज लोड हो रहा है...</div>
+</div>
+
 <!-- सुरक्षित फ़ायरबेस स्क्रिप्ट्स -->
 <script src="https://gstatic.com"></script>
 <script src="https://gstatic.com"></script>
 
 <script>
+    // बग ट्रैकर फंक्शन
+    function logBug(message, type = 'info') {
+        const logsDiv = document.getElementById("bugLogs");
+        let className = 'bug-info';
+        if (type === 'error') className = 'bug-error';
+        if (type === 'success') className = 'bug-success';
+        
+        // नया लॉग ऊपर जोड़ेगा
+        logsDiv.innerHTML = `<div class="${className}">[${new Date().toLocaleTimeString()}] ${message}</div>` + logsDiv.innerHTML;
+    }
+
+    // ग्लोबल एरर कैचर (अगर कोई भी फाइल या स्क्रिप्ट लोड नहीं हुई तो यह पकड़ेगा)
+    window.onerror = function(msg, url, line) {
+        logBug(`क्रिटिकल एरर: ${msg} (लाइन नम्बर: ${line})`, 'error');
+        return false;
+    };
+
     // फ़ायरबेस कॉन्फ़िगरेशन
     const firebaseConfig = {
         apiKey: "AIzaSyAzCILK4qWjGYvkZX0Y4SUtCqduJNA0Njk",
@@ -91,26 +132,29 @@
         measurementId: "G-E20PGF578T"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    try {
+        logBug("फायरबेस कनेक्ट किया जा रहा है...", 'info');
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+        logBug("फायरबेस सफलतापूर्वक लोड हो गया है! अब आप सर्च कर सकते हैं।", 'success');
+    } catch (e) {
+        logBug(`फायरबेस सेटअप फेल हुआ: ${e.message}`, 'error');
+    }
 
     async function searchUser() {
-        // 🚨 टेस्ट के लिए अलर्ट - बटन दबते ही यह स्क्रीन पर आना चाहिए
-        alert("बटन पर क्लिक हो गया है! अब डेटा खोजा जा रहा है...");
-
+        logBug("खोजें बटन दबाया गया। प्रोसेस शुरू...", 'info');
+        
         const phone = document.getElementById("phoneInput").value.trim();
-        const errorMsg = document.getElementById("errorMsg");
         const resultBox = document.getElementById("resultBox");
-
-        errorMsg.innerText = "";
         resultBox.style.display = "none";
 
         if (!phone) {
-            errorMsg.innerText = "कृपया एक फ़ोन नंबर डालें!";
+            logBug("सर्च फ़ील्ड खाली है! कृपया फ़ोन नंबर डालें।", 'error');
             return;
         }
 
         try {
+            logBug(`डेटाबेस में नंबर ${phone} को खोजा जा रहा है...`, 'info');
             const docRef = db.collection("users").doc(phone);
             const docSnap = await docRef.get();
 
@@ -120,12 +164,15 @@
                 document.getElementById("resDetails").innerText = userData.details || "उपलब्ध नहीं";
                 document.getElementById("resStatus").innerText = userData.status || userData.image_url || "उपलब्ध नहीं";
                 resultBox.style.display = "block";
+                logBug("डेटा सफलतापूर्वक मिल गया और स्क्रीन पर दिखा दिया गया है!", 'success');
             } else {
-                errorMsg.innerText = "इस नंबर का कोई डेटा नहीं मिला!";
+                logBug(`खोज पूरी हुई: नंबर (${phone}) का कोई डेटाबेस रिकॉर्ड नहीं मिला।`, 'error');
             }
         } catch (error) {
-            console.error("Error:", error);
-            errorMsg.innerText = "डेटा खोजने में दिक्कत आई।";
+            logBug(`फायरबेस से डेटा लाने में एरर आया: ${error.code} - ${error.message}`, 'error');
+            if(error.message.includes('permission-denied')) {
+                logBug("सलाह: आपके फायरबेस रूल्स (Rules) अभी भी ब्लॉक हैं! कृपया उन्हें दोबारा चेक करें।", 'error');
+            }
         }
     }
 </script>
