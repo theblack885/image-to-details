@@ -1,179 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Records Directory</title>
+    <title>Image to Details - Search System</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f9;
-            margin: 0;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
+            margin: 0;
         }
         .search-container {
-            background-color: white;
+            background: white;
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            max-width: 600px;
-            width: 100%;
-        }
-        h2 { text-align: center; color: #2c3e50; margin-bottom: 25px; }
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
         }
         input[type="text"] {
-            flex: 1;
+            width: 100%;
             padding: 12px;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
+            margin: 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
             font-size: 16px;
-            outline: none;
         }
-        input[type="text"]:focus { border-color: #3498db; }
         button {
-            padding: 12px 25px;
-            background-color: #3498db;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
-            transition: background 0.2s;
         }
-        button:hover { background-color: #2980b9; }
-        .error-message { color: #e74c3c; font-weight: bold; display: none; margin-bottom: 15px; }
-        .profile-card {
-            display: none;
-            border-top: 2px solid #ecf0f1;
-            padding-top: 20px;
+        button:hover {
+            background-color: #0056b3;
         }
-        .section-title {
-            background-color: #ecf0f1;
-            padding: 8px 12px;
-            font-weight: bold;
-            color: #2c3e50;
+        .result-box {
             margin-top: 20px;
-            border-radius: 4px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: left;
+            display: none;
         }
-        .data-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #f2f2f2;
+        .error {
+            color: red;
+            margin-top: 15px;
         }
-        .data-label { font-weight: 600; color: #7f8c8d; }
-        .data-value { color: #2c3e50; font-weight: 500; }
     </style>
 </head>
 <body>
 
 <div class="search-container">
-    <h2>Search User Information</h2>
-    
-    <div class="input-group">
-        <input type="text" id="searchInput" placeholder="Enter Mobile or Aadhaar Number...">
-        <button id="searchBtn">Search</button>
-    </div>
+    <h2>यूज़र डिटेल्स खोजें</h2>
+    <input type="text" id="phoneInput" placeholder="फ़ोन नंबर दर्ज करें (e.g. 8482915363)">
+    <button onclick="searchUser()">खोजें (Search)</button>
 
-    <div class="error-message" id="errorBox">No records found for this number.</div>
+    <div id="errorMsg" class="error"></div>
 
-    <!-- Details Display Section -->
-    <div class="profile-card" id="profileCard">
-        <div class="section-title">Personal & Identity Details</div>
-        <div class="data-row"><span class="data-label">Full Name:</span><span class="data-value" id="valName">-</span></div>
-        <div class="data-row"><span class="data-label">Aadhaar Number:</span><span class="data-value" id="valAadhaar">-</span></div>
-        <div class="data-row"><span class="data-label">Mobile Number:</span><span class="data-value" id="valMobile">-</span></div>
-        <div class="data-row"><span class="data-label">Date of Birth:</span><span class="data-value" id="valDob">-</span></div>
-        <div class="data-row"><span class="data-label">Permanent Address:</span><span class="data-value" id="valAddress">-</span></div>
-
-        <div class="section-title">Academic & School Life Timeline</div>
-        <div class="data-row"><span class="data-label">Primary School:</span><span class="data-value" id="valPrimary">-</span></div>
-        <div class="data-row"><span class="data-label">High School (10th):</span><span class="data-value" id="valHigh">-</span></div>
-        <div class="data-row"><span class="data-label">Higher Secondary (12th):</span><span class="data-value" id="valHigherSec">-</span></div>
-        <div class="data-row"><span class="data-label">College / University:</span><span class="data-value" id="valCollege">-</span></div>
-        <div class="data-row"><span class="data-label">Graduation Year:</span><span class="data-value" id="valGradYear">-</span></div>
+    <div id="resultBox" class="result-box">
+        <strong>नाम:</strong> <span id="resName"></span><br><br>
+        <strong>डिटेल्स:</strong> <span id="resDetails"></span><br><br>
+        <strong>स्टेटस/URL:</strong> <span id="resStatus"></span>
     </div>
 </div>
 
-<!-- Firebase SDKs Setup -->
+<!-- Firebase SDK Scripts -->
 <script type="module">
     import { initializeApp } from "https://gstatic.com";
     import { getFirestore, doc, getDoc } from "https://gstatic.com";
 
-    // ⚠️ IMPORTANT: Replace these placeholders with your actual Firebase Console keys
+    // आपकी ओरिजिनल फायरबेस कॉन्फ़िगरेशन डिटेल्स यहाँ सेट कर दी गई हैं
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY_HERE",
-        authDomain: "YOUR_PROJECT_://firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID_HERE",
-        storageBucket: "YOUR_PROJECT_://appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyAzCILK4qWjGYvkZX0Y4SUtCqduJNA0Njk",
+        authDomain: "image-to-details.firebaseapp.com",
+        projectId: "image-to-details",
+        storageBucket: "image-to-details.firebasestorage.app",
+        messagingSenderId: "648004942829",
+        appId: "1:648004942829:web:0120e9bc16317bba38c5e4",
+        measurementId: "G-E20PGF578T"
     };
 
-    // Firebase Initialize
+    // Firebase और Firestore को शुरू करें
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // DOM Elements
-    const searchInput = document.getElementById('searchInput');
-    const searchBtn = document.getElementById('searchBtn');
-    const errorBox = document.getElementById('errorBox');
-    const profileCard = document.getElementById('profileCard');
+    // सर्च फ़ंक्शन
+    window.searchUser = async function() {
+        const phone = document.getElementById("phoneInput").value.trim();
+        const errorMsg = document.getElementById("errorMsg");
+        const resultBox = document.getElementById("resultBox");
 
-    // Search Action Listener
-    searchBtn.addEventListener('click', async () => {
-        const queryNumber = searchInput.value.trim();
-        errorBox.style.display = 'none';
-        profileCard.style.display = 'none';
+        errorMsg.innerText = "";
+        resultBox.style.display = "none";
 
-        if (!queryNumber) {
-            alert("Please enter a valid number to search.");
+        if (!phone) {
+            errorMsg.innerText = "कृपया एक फ़ोन नंबर डालें!";
             return;
         }
 
-        searchBtn.innerText = "Searching...";
-        searchBtn.disabled = true;
-
         try {
-            // It searches inside the 'users' collection using the number as the Document ID
-            const docRef = doc(db, "users", queryNumber);
+            // 'users' कलेक्शन में उस फ़ोन नंबर वाले डॉक्यूमेंट को खोजना
+            const docRef = doc(db, "users", phone);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                const data = docSnap.data();
+                const userData = docSnap.data();
                 
-                // Displaying fetched data in UI
-                document.getElementById('valName').innerText = data.name || 'N/A';
-                document.getElementById('valAadhaar').innerText = data.aadhaar || 'N/A';
-                document.getElementById('valMobile').innerText = data.mobile || 'N/A';
-                document.getElementById('valDob').innerText = data.dob || 'N/A';
-                document.getElementById('valAddress').innerText = data.address || 'N/A';
-                document.getElementById('valPrimary').innerText = data.primarySchool || 'N/A';
-                document.getElementById('valHigh').innerText = data.highSchool || 'N/A';
-                document.getElementById('valHigherSec').innerText = data.higherSecondary || 'N/A';
-                document.getElementById('valCollege').innerText = data.college || 'N/A';
-                document.getElementById('valGradYear').innerText = data.gradYear || 'N/A';
-
-                profileCard.style.display = 'block';
+                // डेटा को स्क्रीन पर दिखाना
+                document.getElementById("resName").innerText = userData.name || "उपलब्ध नहीं";
+                document.getElementById("resDetails").innerText = userData.details || "उपलब्ध नहीं";
+                document.getElementById("resStatus").innerText = userData.status || userData.image_url || "उपलब्ध नहीं";
+                
+                resultBox.style.display = "block";
             } else {
-                errorBox.style.display = 'block';
+                errorMsg.innerText = "इस नंबर का कोई डेटा नहीं मिला!";
             }
         } catch (error) {
             console.error("Error fetching document:", error);
-            alert("Database connection error. Please check your config keys.");
-        } finally {
-            searchBtn.innerText = "Search";
-            searchBtn.disabled = false;
+            errorMsg.innerText = "डेटा खोजने में त्रुटि हुई। कृपया जांचें कि डेटाबेस Rules 'allow read' पर सेट हैं या नहीं।";
         }
-    });
+    }
 </script>
 
 </body>
