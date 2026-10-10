@@ -1,262 +1,180 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Lens Atlas</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-/* Layout: one-screen bento. Hero copy left, glass uploader/viewer right, then engine tiles and a privacy strip. */
-:root{
-  --bg:#F2F5F8; --bg2:#E6ECF2; --fg:#0C1624; --muted:#52627A; --line:rgba(12,22,36,.12);
-  --glass:rgba(255,255,255,.62); --glass-line:rgba(255,255,255,.9);
-  --accent:#0A8F86; --accent-ink:#FFFFFF; --warm:#E8742C; --good:#12805C; --bad:#B4372A;
-  --aurora1:rgba(10,143,134,.22); --aurora2:rgba(232,116,44,.18);
-  --f-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
-  --f-body:'Geist','Segoe UI',system-ui,sans-serif;
-  --f-mono:'Geist Mono',ui-monospace,Menlo,monospace;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#070C14; --bg2:#0D1522; --fg:#E9F0F8; --muted:#8FA1BA; --line:rgba(233,240,248,.12);
-  --glass:rgba(18,28,44,.58); --glass-line:rgba(255,255,255,.1);
-  --accent:#4FE3D0; --accent-ink:#04201C; --warm:#FFA766; --good:#5BE2A7; --bad:#FF8573;
-  --aurora1:rgba(79,227,208,.20); --aurora2:rgba(255,167,102,.14); color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#070C14; --bg2:#0D1522; --fg:#E9F0F8; --muted:#8FA1BA; --line:rgba(233,240,248,.12);
-  --glass:rgba(18,28,44,.58); --glass-line:rgba(255,255,255,.1);
-  --accent:#4FE3D0; --accent-ink:#04201C; --warm:#FFA766; --good:#5BE2A7; --bad:#FF8573;
-  --aurora1:rgba(79,227,208,.20); --aurora2:rgba(255,167,102,.14); color-scheme:dark}
-
-*{box-sizing:border-box}
-body{margin:0;padding-inline:max(16px,4vw);padding-block:20px 56px;background:var(--bg);color:var(--fg);font:400 16px/1.55 var(--f-body);position:relative;overflow-x:hidden;min-height:100%}
-body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(60vw 50vh at 85% -5%,var(--aurora1),transparent 70%),radial-gradient(50vw 45vh at 0% 40%,var(--aurora2),transparent 70%),linear-gradient(var(--bg),var(--bg2))}
-.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
-a{color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
-
-nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:10px;font:700 19px var(--f-display);letter-spacing:-.01em}
-.brand i{width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);position:relative;display:block}
-.brand i::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--warm)}
-.nav-r{display:flex;align-items:center;gap:10px}
-.pill{font:500 12px var(--f-mono);letter-spacing:.04em;padding:6px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--glass);backdrop-filter:blur(12px)}
-.tbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--glass);color:var(--fg);cursor:pointer;font-size:16px;backdrop-filter:blur(12px)}
-
-.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:36px;align-items:center;padding-block:12px}
-h1{font:800 clamp(2.5rem,6.2vw,5rem)/.98 var(--f-display);letter-spacing:-.035em;margin:0 0 18px;text-wrap:balance}
-h1 em{font-style:normal;background:linear-gradient(100deg,var(--accent),var(--warm));-webkit-background-clip:text;background-clip:text;color:transparent}
-.lede{color:var(--muted);font-size:1.08rem;max-width:44ch;margin:0 0 22px}
-.stats{display:flex;flex-wrap:wrap;gap:8px}
-.stats span{font:500 12px var(--f-mono);padding:7px 12px;border-radius:10px;border:1px solid var(--line);color:var(--muted)}
-.stats b{color:var(--fg);font-weight:500}
-
-.glass{background:var(--glass);border:1px solid var(--glass-line);border-radius:28px;backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);box-shadow:0 30px 80px -30px rgba(0,0,0,.35)}
-.stage{padding:14px;display:flex;flex-direction:column;gap:12px}
-.view{position:relative;border-radius:18px;overflow:hidden;background:var(--bg2);aspect-ratio:4/3;display:grid;place-items:center;border:1px dashed var(--line);transition:border-color .2s}
-.view.drag{border-color:var(--accent);border-style:solid}
-.view canvas{width:100%;height:100%;object-fit:contain;display:block}
-.scan{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);box-shadow:0 0 24px 6px var(--accent);top:0;animation:scan 1.6s ease-in-out infinite;opacity:0}
-.view.busy .scan{opacity:.9}
-@keyframes scan{0%{top:2%}50%{top:96%}100%{top:2%}}
-.tag{position:absolute;left:12px;top:12px;font:500 11px var(--f-mono);letter-spacing:.06em;padding:5px 10px;border-radius:999px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px)}
-.drop{position:absolute;inset:auto 12px 12px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(14px)}
-.drop p{margin:0;font-size:.9rem;color:var(--muted)}
-.btn{font:600 14px var(--f-body);padding:11px 18px;border-radius:999px;border:0;cursor:pointer;background:var(--accent);color:var(--accent-ink);transition:transform .15s}
-.btn:hover{transform:translateY(-1px)}
-.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
-.status{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:2px 6px 4px}
-.status .msg{font:500 13px var(--f-mono);color:var(--muted);min-width:0}
-.status .msg b{color:var(--good);font-weight:500}
-.status .msg.warn b{color:var(--warm)}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-
-h2{font:700 clamp(1.5rem,3vw,2.1rem)/1.1 var(--f-display);letter-spacing:-.02em;margin:0}
-.sec-h{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:16px}
-.sec-h p{margin:0;color:var(--muted);max-width:52ch}
-.bento{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.tile{padding:20px;display:flex;flex-direction:column;gap:14px;border-radius:22px;text-decoration:none;min-height:170px;transition:transform .2s,border-color .2s}
-.tile:hover{transform:translateY(-3px);border-color:var(--accent)}
-.tile .k{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.tile h3{margin:0;font:700 1.3rem var(--f-display);letter-spacing:-.01em}
-.tile p{margin:0;color:var(--muted);font-size:.9rem;flex:1}
-.tile .go{font:600 13px var(--f-body);color:var(--accent)}
-.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.step{padding:20px;border-radius:22px}
-.step h3{margin:0 0 6px;font:700 1.1rem var(--f-display)}
-.step p{margin:0;color:var(--muted);font-size:.92rem}
-.privacy{padding:22px 26px;display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-radius:22px}
-.privacy p{margin:0;max-width:70ch;color:var(--muted)}
-.privacy b{color:var(--fg)}
-footer{font:400 12px var(--f-mono);color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-
-@media (max-width:900px){.hero{grid-template-columns:minmax(0,1fr)}.bento{grid-template-columns:repeat(2,minmax(0,1fr))}.steps{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:480px){.bento{grid-template-columns:minmax(0,1fr)}.pill{display:none}.drop{inset:auto 8px 8px 8px}}
-@media (prefers-reduced-motion:reduce){.scan{animation:none}.btn,.tile{transition:none}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Records Directory</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .search-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 600px;
+            width: 100%;
+        }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 25px; }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+        }
+        input[type="text"]:focus { border-color: #3498db; }
+        button {
+            padding: 12px 25px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #2980b9; }
+        .error-message { color: #e74c3c; font-weight: bold; display: none; margin-bottom: 15px; }
+        .profile-card {
+            display: none;
+            border-top: 2px solid #ecf0f1;
+            padding-top: 20px;
+        }
+        .section-title {
+            background-color: #ecf0f1;
+            padding: 8px 12px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f2f2f2;
+        }
+        .data-label { font-weight: 600; color: #7f8c8d; }
+        .data-value { color: #2c3e50; font-weight: 500; }
+    </style>
 </head>
 <body>
 
-<div class="wrap">
-  <nav>
-    <div class="brand"><i></i>Lens Atlas</div>
-    <div class="nav-r"><span class="pill">RUNS ON YOUR DEVICE</span><button class="tbtn" id="theme" aria-label="Switch theme" title="Switch theme">◐</button></div>
-  </nav>
-
-  <header class="hero">
-    <div>
-      <h1>Find where a photo <em>lives online.</em></h1>
-      <p class="lede">Drop an image. Lens Atlas spots the faces in it, then hands the picture to the major reverse image search engines so you can trace its source, other sizes and copies.</p>
-      <div class="stats"><span><b>0</b> uploads to our servers</span><span><b>4</b> search engines</span><span><b>JPG · PNG · WEBP</b></span></div>
+<div class="search-container">
+    <h2>Search User Information</h2>
+    
+    <div class="input-group">
+        <input type="text" id="searchInput" placeholder="Enter Mobile or Aadhaar Number...">
+        <button id="searchBtn">Search</button>
     </div>
 
-    <div class="glass stage">
-      <div class="view" id="view">
-        <canvas id="cv" width="960" height="720" aria-label="Image preview with detected faces"></canvas>
-        <div class="scan"></div>
-        <span class="tag" id="tag">SAMPLE PREVIEW</span>
-        <div class="drop">
-          <p id="hint">Drag a photo here, or choose one.</p>
-          <button class="btn" id="pick">Choose image</button>
-        </div>
-      </div>
-      <input type="file" id="file" accept="image/jpeg,image/png,image/webp" hidden>
-      <div class="status">
-        <div class="msg" id="msg">Example shown. Add your own photo to begin.</div>
-        <div class="row"><button class="btn ghost" id="copy" disabled>Copy image</button><button class="btn ghost" id="clear" disabled>Clear</button></div>
-      </div>
+    <div class="error-message" id="errorBox">No records found for this number.</div>
+
+    <!-- Details Display Section -->
+    <div class="profile-card" id="profileCard">
+        <div class="section-title">Personal & Identity Details</div>
+        <div class="data-row"><span class="data-label">Full Name:</span><span class="data-value" id="valName">-</span></div>
+        <div class="data-row"><span class="data-label">Aadhaar Number:</span><span class="data-value" id="valAadhaar">-</span></div>
+        <div class="data-row"><span class="data-label">Mobile Number:</span><span class="data-value" id="valMobile">-</span></div>
+        <div class="data-row"><span class="data-label">Date of Birth:</span><span class="data-value" id="valDob">-</span></div>
+        <div class="data-row"><span class="data-label">Permanent Address:</span><span class="data-value" id="valAddress">-</span></div>
+
+        <div class="section-title">Academic & School Life Timeline</div>
+        <div class="data-row"><span class="data-label">Primary School:</span><span class="data-value" id="valPrimary">-</span></div>
+        <div class="data-row"><span class="data-label">High School (10th):</span><span class="data-value" id="valHigh">-</span></div>
+        <div class="data-row"><span class="data-label">Higher Secondary (12th):</span><span class="data-value" id="valHigherSec">-</span></div>
+        <div class="data-row"><span class="data-label">College / University:</span><span class="data-value" id="valCollege">-</span></div>
+        <div class="data-row"><span class="data-label">Graduation Year:</span><span class="data-value" id="valGradYear">-</span></div>
     </div>
-  </header>
-
-  <section>
-    <div class="sec-h"><h2>Send it to a search engine</h2><p>Each one opens in a new tab. Copy the image here, then paste it or upload it there.</p></div>
-    <div class="bento">
-      <a class="glass tile" href="https://lens.google.com/" target="_blank" rel="noopener"><span class="k">Google</span><h3>Lens</h3><p>Broad web coverage. Good for products, places and the original post of a picture.</p><span class="go">Open Lens →</span></a>
-      <a class="glass tile" href="https://tineye.com/" target="_blank" rel="noopener"><span class="k">TinEye</span><h3>TinEye</h3><p>Finds exact and edited copies, sorted by oldest first, so you can see where an image began.</p><span class="go">Open TinEye →</span></a>
-      <a class="glass tile" href="https://www.bing.com/visualsearch" target="_blank" rel="noopener"><span class="k">Microsoft</span><h3>Bing Visual Search</h3><p>Strong on shopping matches, landmarks and similar-looking images.</p><span class="go">Open Bing →</span></a>
-      <a class="glass tile" href="https://yandex.com/images/" target="_blank" rel="noopener"><span class="k">Yandex</span><h3>Yandex Images</h3><p>Often surfaces matches the others miss, especially for sites outside the US.</p><span class="go">Open Yandex →</span></a>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-h"><h2>How it works</h2></div>
-    <div class="steps">
-      <div class="glass step"><h3>Drop a photo</h3><p>The file is read by your browser and drawn to a canvas. Nothing is sent anywhere.</p></div>
-      <div class="glass step"><h3>Faces are outlined</h3><p>A face detector running in your browser finds faces and marks each one with a box and a count.</p></div>
-      <div class="glass step"><h3>Pick an engine</h3><p>Copy the image, open a search engine and paste. Results come from that engine, not from us.</p></div>
-    </div>
-  </section>
-
-  <div class="glass privacy">
-    <p><b>Detection is not identification.</b> Lens Atlas only shows where faces are in a picture. It never names anyone. Use reverse search to check where an image came from, and respect other people's privacy when you do.</p>
-  </div>
-
-  <footer><span>Lens Atlas · 2027 edition</span><span>Face detection runs locally in your browser</span></footer>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
-<script>
-(function(){
-  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
-  var view=document.getElementById('view'),msg=document.getElementById('msg'),tag=document.getElementById('tag');
-  var file=document.getElementById('file'),hint=document.getElementById('hint');
-  var copyBtn=document.getElementById('copy'),clearBtn=document.getElementById('clear');
-  var currentBlob=null;
+<!-- Firebase SDKs Setup -->
+<script type="module">
+    import { initializeApp } from "https://gstatic.com";
+    import { getFirestore, doc, getDoc } from "https://gstatic.com";
 
-  function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
-
-  /* Example scene: abstract portrait, clearly labelled as a sample */
-  function drawSample(){
-    var w=cv.width,h=cv.height;cv.width=960;cv.height=720;w=960;h=720;
-    var g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#16324a');g.addColorStop(1,'#3a2b45');
-    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-    ctx.fillStyle='rgba(255,167,102,.25)';ctx.beginPath();ctx.arc(780,140,170,0,7);ctx.fill();
-    ctx.fillStyle='#24445f';ctx.beginPath();ctx.ellipse(480,760,300,230,0,0,7);ctx.fill();
-    ctx.fillStyle='#e8b894';ctx.beginPath();ctx.ellipse(480,330,125,155,0,0,7);ctx.fill();
-    ctx.fillStyle='#2a1d24';ctx.beginPath();ctx.ellipse(480,230,135,95,0,Math.PI,0);ctx.fill();
-    ctx.fillStyle='#2a1d24';[435,525].forEach(function(x){ctx.beginPath();ctx.arc(x,320,9,0,7);ctx.fill()});
-    ctx.strokeStyle='#2a1d24';ctx.lineWidth=5;ctx.beginPath();ctx.arc(480,380,40,.2,Math.PI-.2);ctx.stroke();
-    box(335,165,290,360,'face 1 · sample');
-  }
-  function box(x,y,w,h,label){
-    var c=css('--accent')||'#4FE3D0',L=Math.max(18,Math.min(w,h)*.18);
-    ctx.strokeStyle=c;ctx.lineWidth=4;ctx.lineCap='round';ctx.shadowColor=c;ctx.shadowBlur=14;
-    [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]].forEach(function(p){
-      ctx.beginPath();ctx.moveTo(p[0],p[1]+p[3]*L);ctx.lineTo(p[0],p[1]);ctx.lineTo(p[0]+p[2]*L,p[1]);ctx.stroke()});
-    ctx.shadowBlur=0;
-    ctx.font='500 22px "Geist Mono",monospace';var tw=ctx.measureText(label).width+20;
-    ctx.fillStyle=c;ctx.fillRect(x,Math.max(0,y-34),tw,30);
-    ctx.fillStyle='#04201C';ctx.fillText(label,x+10,Math.max(0,y-34)+22);
-  }
-
-  function setMsg(html,warn){msg.className='msg'+(warn?' warn':'');msg.innerHTML=html}
-
-  var modelsReady=null;
-  function loadModels(){
-    if(!modelsReady) modelsReady=faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
-    return modelsReady;
-  }
-  async function detect(c){
-    try{
-      await loadModels();
-      var r=await faceapi.detectAllFaces(c,new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:0.4}));
-      return r.map(function(d){return {boundingBox:d.box}});
-    }catch(e){return null}
-  }
-
-  async function load(f){
-    if(!f||!/^image\/(jpeg|png|webp)$/.test(f.type)){setMsg('<b>Unsupported file.</b> Choose a JPG, PNG or WEBP image.',true);return}
-    currentBlob=f;view.classList.add('busy');tag.textContent='ANALYSING';setMsg('Reading image…');
-    var url=URL.createObjectURL(f),img=new Image();
-    img.onload=async function(){
-      var max=1600,s=Math.min(1,max/Math.max(img.width,img.height));
-      cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);
-      ctx.drawImage(img,0,0,cv.width,cv.height);
-      var faces=await detect(cv);
-      await new Promise(function(r){setTimeout(r,500)});
-      view.classList.remove('busy');tag.textContent='YOUR IMAGE';
-      if(faces===null){
-        setMsg('<b>Image ready.</b> Face detector could not load. Check your internet and reload the page.',true);
-      }else if(faces.length){
-        faces.forEach(function(f2,i){var b=f2.boundingBox;box(b.x,b.y,b.width,b.height,'face '+(i+1))});
-        setMsg('<b>'+faces.length+' face'+(faces.length>1?'s':'')+' found.</b> Copy the image and open a search engine below.');
-      }else{
-        setMsg('<b>No clear face found.</b> You can still search the image by its content.',true);
-      }
-      URL.revokeObjectURL(url);
-      copyBtn.disabled=false;clearBtn.disabled=false;hint.textContent=f.name;
+    // ⚠️ IMPORTANT: Replace these placeholders with your actual Firebase Console keys
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY_HERE",
+        authDomain: "YOUR_PROJECT_://firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID_HERE",
+        storageBucket: "YOUR_PROJECT_://appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
     };
-    img.onerror=function(){view.classList.remove('busy');setMsg('<b>Could not read that file.</b> Try another image.',true)};
-    img.src=url;
-  }
 
-  document.getElementById('pick').onclick=function(){file.click()};
-  file.onchange=function(){load(file.files[0]);file.value=''};
-  ['dragenter','dragover'].forEach(function(e){view.addEventListener(e,function(ev){ev.preventDefault();view.classList.add('drag')})});
-  ['dragleave','drop'].forEach(function(e){view.addEventListener(e,function(ev){ev.preventDefault();view.classList.remove('drag')})});
-  view.addEventListener('drop',function(ev){load(ev.dataTransfer.files[0])});
-  document.addEventListener('paste',function(ev){var it=[].find.call(ev.clipboardData.items,function(i){return i.type.indexOf('image/')===0});if(it)load(it.getAsFile())});
+    // Firebase Initialize
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  clearBtn.onclick=function(){currentBlob=null;drawSample();tag.textContent='SAMPLE PREVIEW';hint.textContent='Drag a photo here, or choose one.';setMsg('Example shown. Add your own photo to begin.');copyBtn.disabled=true;clearBtn.disabled=true};
-  copyBtn.onclick=function(){
-    cv.toBlob(async function(b){
-      try{await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);setMsg('<b>Image copied.</b> Paste it into the search engine.')}
-      catch(e){setMsg('<b>Copy is blocked here.</b> Save the image from your device and upload it to the engine instead.',true)}
-    },'image/png');
-  };
+    // DOM Elements
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const errorBox = document.getElementById('errorBox');
+    const profileCard = document.getElementById('profileCard');
 
-  var root=document.documentElement,tb=document.getElementById('theme');
-  tb.onclick=function(){
-    var dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-    root.dataset.theme=dark?'light':'dark';
-    if(!currentBlob)setTimeout(drawSample,0);
-  };
+    // Search Action Listener
+    searchBtn.addEventListener('click', async () => {
+        const queryNumber = searchInput.value.trim();
+        errorBox.style.display = 'none';
+        profileCard.style.display = 'none';
 
-  drawSample();
-  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){if(!currentBlob)drawSample()});
-})();
+        if (!queryNumber) {
+            alert("Please enter a valid number to search.");
+            return;
+        }
+
+        searchBtn.innerText = "Searching...";
+        searchBtn.disabled = true;
+
+        try {
+            // It searches inside the 'users' collection using the number as the Document ID
+            const docRef = doc(db, "users", queryNumber);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                
+                // Displaying fetched data in UI
+                document.getElementById('valName').innerText = data.name || 'N/A';
+                document.getElementById('valAadhaar').innerText = data.aadhaar || 'N/A';
+                document.getElementById('valMobile').innerText = data.mobile || 'N/A';
+                document.getElementById('valDob').innerText = data.dob || 'N/A';
+                document.getElementById('valAddress').innerText = data.address || 'N/A';
+                document.getElementById('valPrimary').innerText = data.primarySchool || 'N/A';
+                document.getElementById('valHigh').innerText = data.highSchool || 'N/A';
+                document.getElementById('valHigherSec').innerText = data.higherSecondary || 'N/A';
+                document.getElementById('valCollege').innerText = data.college || 'N/A';
+                document.getElementById('valGradYear').innerText = data.gradYear || 'N/A';
+
+                profileCard.style.display = 'block';
+            } else {
+                errorBox.style.display = 'block';
+            }
+        } catch (error) {
+            console.error("Error fetching document:", error);
+            alert("Database connection error. Please check your config keys.");
+        } finally {
+            searchBtn.innerText = "Search";
+            searchBtn.disabled = false;
+        }
+    });
 </script>
+
 </body>
 </html>
